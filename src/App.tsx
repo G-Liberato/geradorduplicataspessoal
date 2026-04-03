@@ -73,6 +73,7 @@ export default function App() {
     window.print();
   };
 
+  // Mantemos a função mas agora ela avisa para usar a impressão se falhar
   const exportPDF = async () => {
     if (!duplicataRef.current) return;
     
@@ -80,21 +81,14 @@ export default function App() {
     setErrorMessage(null);
     
     try {
-      // Pequena pausa para garantir que o DOM está estável
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       const element = duplicataRef.current;
-      
-      // Captura o canvas de forma mais simples e direta
       const canvas = await html2canvas(element, {
         scale: 2,
-        useCORS: true,
+        useCORS: false, // Desativado para evitar erros de segurança
+        allowTaint: true,
         backgroundColor: '#ffffff',
-        // Garante que o scroll não interfira na captura
         scrollX: 0,
         scrollY: 0,
-        windowWidth: element.offsetWidth,
-        windowHeight: element.offsetHeight,
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -114,7 +108,8 @@ export default function App() {
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      setErrorMessage('O download automático falhou devido a restrições do navegador. Por favor, use o botão "Imprimir / Salvar Manualmente" abaixo e escolha a opção "Salvar como PDF".');
+      // Se falhar o download direto, abrimos a impressão automaticamente
+      handlePrint();
     } finally {
       setIsGenerating(false);
     }
@@ -306,16 +301,11 @@ export default function App() {
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            onClick={exportPDF}
-            disabled={isGenerating}
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-full shadow-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+            onClick={handlePrint}
+            className="bg-blue-600 text-white px-6 py-2.5 rounded-full shadow-xl font-bold flex items-center gap-2 hover:bg-blue-700 transition-colors"
           >
-            {isGenerating ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            Gerar PDF Agora
+            <Printer className="w-4 h-4" />
+            Gerar PDF (Imprimir)
           </motion.button>
         </div>
 
